@@ -23,12 +23,21 @@ init:
             bic.b   #BIT0,&P1OUT            ; Clear P1.0 output
             bis.b   #BIT0,&P1DIR            ; P1.0 output
 
+            bic.b   #BIT2,&P1OUT            ; Clear P1.2 output (use )
+            bis.b   #BIT2,&P1DIR            ; P1.2 output
+
+            bic.b   #BI30,&P1OUT            ; Clear P1.3 output
+            bis.b   #BIT3,&P1DIR            ; P1.3 output                        
+
+            ; Set up timer CC interrupt for heartbeat LED
             bis.w   #TBCLR, &TB0CTL         ; Clear timers and dividers
             bis.w   #TBSSEL__ACLK, &TB0CTL  ; ACLK as Timer source
             bis.w   #MC__UP, &TB0CTL        ; Up counting mode 
             mov.w   #32800, &TB0CCR0        ; initialize CCR0
             bis.w   #CCIE, &TB0CCTL0         ; Enable capture/compare Interrupt
             bis.w   #CCIFG, &TB0CCTL0        ; Clear interrupt flag
+
+
             
 
             ; Disable low-power mode
