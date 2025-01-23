@@ -15,51 +15,52 @@
 
 RESET       mov.w   #__STACK_END,SP         ; Initialize stack pointer
 
+STOPWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
 
-init:
-            ; stop watchdog timer
-            mov.w   #WDTPW+WDTHOLD,&WDTCTL
+SetupRED    bic.b   #BIT0,&P1OUT            ; Clear P6.6 output
+            bis.b   #BIT0,&P1DIR            ; P6.6 output    
 
-            bic.b   #BIT0,&P1OUT            ; Clear P1.0 output
-            bis.b   #BIT0,&P1DIR            ; P1.0 output
+SetupP13    bic.b   #BIT6,&P1OUT            ; Set P1.6 as SCL
+            bis.b   #BIT6,&P1DIR
 
-            bic.b   #BIT2,&P1OUT            ; Clear P1.2 output (use )
-            bis.b   #BIT2,&P1DIR            ; P1.2 output
+SetupP12    bic.b   #BIT5,&P1OUT            ; Set P1.5 as SDA
+            bis.b   #BIT5,&P1DIR
 
-            bic.b   #BI30,&P1OUT            ; Clear P1.3 output
-            bis.b   #BIT3,&P1DIR            ; P1.3 output                        
-
-            ; Set up timer CC interrupt for heartbeat LED
-            bis.w   #TBCLR, &TB0CTL         ; Clear timers and dividers
-            bis.w   #TBSSEL__ACLK, &TB0CTL  ; ACLK as Timer source
-            bis.w   #MC__UP, &TB0CTL        ; Up counting mode 
-            mov.w   #32800, &TB0CCR0        ; initialize CCR0
-            bis.w   #CCIE, &TB0CCTL0         ; Enable capture/compare Interrupt
-            bis.w   #CCIFG, &TB0CCTL0        ; Clear interrupt flag
-
-
-            
-
-            ; Disable low-power mode
-            bic.w   #LOCKLPM5,&PM5CTL0
+SetupTimer  bis.w   #TBCLR, &TB0CCTL0       ; Clear timer and dividers
+            bis.w   #TBSSEL__ACLK, &TB0CTL  ; ACLK as timer source
+            bis.w   #MC__UP, &TB0CTL        ; Up counting mode for timer
+            mov.w   #32800, TB0CCR0
+            bis.w   #CCIE, &TB0CCTL0
+            bis.w   #CCIFG, &TB0CCTL0       ; Clear interrupt flag
+           
             NOP
             bis.w   #GIE, SR                ; Enable maskable interrupts
             NOP
 
+
+
+DisableLPM  bic.w   #LOCKLPM5,&PM5CTL0      ; Disable low-power mode
+
+           
+
 main:
 
-            nop 
+            nop
             jmp main
             nop
 
 
+
 ;------------------------------------------------------------------------------
-;           Interrupt Service Routines
-;------------------------------------------------------------------------------
+;           Interrupt Vectors
+;------------------------------------------------------------------------------        
 ISR_TB0_CCR0:
-            xor.b   #BIT0,&P1OUT              ; Toggle P6.6
-            bic.w   #CCIFG, &TB0CCTL0         ; Clear interrupt flag
+            xor.b   #BIT0, &P1OUT           ; Toggle P1.1
+            xor.b   #BIT6, &P1OUT
+            xor.b   #BIT5, &P1OUT
+            bic.w   #CCIFG, &TB0CCTL0       ; Clear flag
             reti
+
 
 ;------------------------------------------------------------------------------
 ;           Interrupt Vectors
@@ -67,8 +68,7 @@ ISR_TB0_CCR0:
             .sect   RESET_VECTOR            ; MSP430 RESET Vector
             .short  RESET                   ;
 
-            .sect   ".int43"
-            .short  ISR_TB0_CCR0
-            .end
+            .sect ".int43"
+            .short ISR_TB0_CCR0
 
-
+            .end                ;
