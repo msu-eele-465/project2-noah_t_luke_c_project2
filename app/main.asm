@@ -46,6 +46,7 @@ DisableLPM  bic.w   #LOCKLPM5,&PM5CTL0      ; Disable low-power mode
 
 main:
             call    #i2c_write
+            call    #i2c_send_multiple
             call    #i2c_stop
             jmp main
             nop
@@ -56,11 +57,9 @@ main:
 i2c_write:
             call    #i2c_start
             call    #i2c_tx_byte
-            call    #i2c_sda_delay
-            bic.b   #BIT5, &P1OUT           ; Clear SDA for WRITE
-            bis.b   #BIT6, &P1OUT           ; Pulse SCL
-            call    #i2c_sda_delay
-            bic.b   #BIT6, &P1OUT           
+            ;bis.b   #BIT6, &P1OUT           ; Pulse SCL
+            ;call    #i2c_sda_delay
+            ;bic.b   #BIT6, &P1OUT           
             ret
 
 
@@ -74,11 +73,25 @@ i2c_start:                                  ; Start signal, high to low on SDA, 
             ret
 
 i2c_stop:                                   ; Stop signal, low to high on SDA, high on SCL, assume SCL high SDA low
+            ;bic.b   #BIT5, &P1OUT           ; Clear SDA
+            call    #i2c_sda_delay          ; Delay
             bis.b   #BIT6, &P1OUT           ; Set SCL high   
             call    #i2c_sda_delay          ; Delay
             bis.b   #BIT5, &P1OUT           ; Set SDA high
-            ;call    #i2c_scl_delay          ; Endless loop
             ret
+
+i2c_send_multiple:
+            mov.b   DATA_COUNT,R10
+            mov.w   #DATA_LIST,R9
+            
+i2c_send_next:
+            mov.b   @R9+, &tx_byte
+            call    #i2c_tx_byte
+            dec     R10
+            jnz     i2c_send_next
+            ret
+
+
 
 i2c_tx_byte:                                ; Use to send a byte
             mov.w  #8, R5                   ; Loop Counter
@@ -100,20 +113,22 @@ set_scl:
             rlc.b  tx_byte                  ; Shift MSB
             dec    R5                       ; Dec loop Counter
             jnz    tx_msb_tester            ; loop
-            ;rlc.b  tx_byte                  ; Shift MSB
+            ;rlc.b  tx_byte                 ; Shift MSB
+            ;bic.b   #BIT5, &P1OUT           ; Clear SDA
+            call    #i2c_send_ack
             ret
 
-i2c_rx_ack:                                 ; Acknowledge data recieved
-            bic.b  #BIT5, &P1DIR            ; Input for SDA
-            nop
+i2c_send_ack:
+            bic.b   #BIT5, &P1OUT           ; Clear SDA
+            call    #i2c_sda_delay
+            bis.b   #BIT6, &P1OUT           ; Pulse SCL
+            call    #i2c_sda_delay
+            bic.b   #BIT6, &P1OUT  
 
-            bis.b  #BIT6, &P1OUT            ; Set SCL high
-            nop
-            bit.b  #BIT5, &P1DIR            ; Check SDA with Z flag
-            bic.b  #BIT6, &P1OUT            ; SCL low
-           
-            bic.b  #BIT5, &P1DIR            ; Reset SDA to output
-            ret
+;i2c_recieve_ack:
+
+
+
 
 i2c_sda_delay:
             nop
@@ -121,8 +136,8 @@ i2c_sda_delay:
             ret
 
 
-i2c_scl_delay:
-            jmp     i2c_scl_delay
+endless:
+            jmp     endless
             ret
 
 
@@ -133,7 +148,9 @@ i2c_scl_delay:
 ;------------------------------------------------------------------------------
 
             .DATA
-tx_byte:    .byte  0x0A5;
+tx_byte:    .byte   0xAA
+DATA_LIST:  .byte   0x88, 0x99, 0xAA, 0xBB
+DATA_COUNT: .byte   0x04
 
 
 
