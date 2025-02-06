@@ -49,15 +49,36 @@ DisableLPM  bic.w   #LOCKLPM5,&PM5CTL0      ; Disable low-power mode
            
 
 main:
+<<<<<<< HEAD
             call    #i2c_read_rtc
             call    #i2c_delay
      
             
             ;call    #i2c_write
+=======
+            ; For the send dummy data task
+            ;call    #i2c_start
+            ;call    #i2c_tx_byte
+            ;call    #i2c_stop
+            ;inc.b   &COUNTER
+            ;cmp.b   #0x0A, &COUNTER
+            ;jeq     reset_counter               
+
+            ; For the recieve data from AD2 task
+            ;call    #i2c_start
+            ;mov.b   #10101011b, &tx_byte
+            ;call    #i2c_tx_byte
+            ;call    #i2c_rx_byte
+            ;call    #i2c_stop         
+            
+            mov.b   ADDRESS, &tx_byte
+            call    #i2c_write
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
             jmp main
             nop
 
 ;------------------------------------------------------------------------------
+<<<<<<< HEAD
 ;           Used Registors
 ;           
 ;           R4 delay loop
@@ -68,6 +89,8 @@ main:
 ;           R9 data list for send multiple
 ;           R10 size of the data list
 ;------------------------------------------------------------------------------
+=======
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
 ;           Subroutines
 ;------------------------------------------------------------------------------
 
@@ -82,7 +105,10 @@ i2c_start:                                  ; Start signal, high to low on SDA, 
             bic.b   #BIT5, &P1OUT           ; clear SDA low
             call    #i2c_delay              ; Delay
             bic.b   #BIT6, &P1OUT           ; Clear SCL
+<<<<<<< HEAD
             call    #i2c_delay              ; Delay
+=======
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
             ret
 
 i2c_stop:                                   ; Stop signal, low to high on SDA, high on SCL, assume SCL high SDA low
@@ -94,15 +120,21 @@ i2c_stop:                                   ; Stop signal, low to high on SDA, h
             ret
 
 i2c_delay:
+<<<<<<< HEAD
             mov.w   #0x0FFF,R4
 delay_loop: 
             dec     R4
             jnz     delay_loop     
+=======
+            nop
+            nop
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
             ret
 ;------------------------------------------------------------------------------
 
 
 ;------------------------------------------------------------------------------
+<<<<<<< HEAD
 ;           Write / Read
 ;------------------------------------------------------------------------------
 i2c_write:
@@ -224,6 +256,26 @@ i2c_read_rtc:
              
 
 
+=======
+;           Write        
+;------------------------------------------------------------------------------
+i2c_write:
+            call    #i2c_start
+            call    #i2c_send_multiple
+;            call    #i2c_recieve_ack_nack
+;            tst.b   R8
+;            jnz i2c_nack
+
+            ;mov.b   #0xAD, &tx_byte
+            ;call    #i2c_tx_byte
+            ;call    #i2c_recieve_ack_nack
+            ;tst.b   R8
+            ;jnz i2c_nack     
+
+            call    #i2c_stop
+
+            ret
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
 ;------------------------------------------------------------------------------
 
 
@@ -246,28 +298,46 @@ set_scl:
             bis.b  #BIT6, &P1OUT            ; SCL high
             call   #i2c_delay               ; Delay
             bic.b  #BIT6, &P1OUT            ; SCL low
+<<<<<<< HEAD
             call   #i2c_delay               ; Delay
             rlc.b  tx_byte                  ; Shift MSB
             dec    R5                       ; Dec loop Counter
             jnz    tx_msb_tester            ; loop
 
+=======
+            rlc.b  tx_byte                  ; Shift MSB
+            dec    R5                       ; Dec loop Counter
+            jnz    tx_msb_tester            ; loop
+            call    #i2c_recieve_ack_nack
+            tst.b   R8
+            jnz i2c_nack
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
             ret
 
 i2c_send_multiple:
             mov.b   DATA_COUNT,R10          ; Move the size of data packet into R10
             mov.w   #DATA_LIST,R9           ; Move the data packet into R9
+<<<<<<< HEAD
             ret
+=======
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
             
 i2c_send_next:
             mov.b   @R9+, &tx_byte          ; First byte from R10 into tx_byte
             call    #i2c_tx_byte            ; Send byte
             dec     R10                     ; Decrease R10, number left to send
+<<<<<<< HEAD
             jnz     i2c_send_next           ; Send next bit
             ret
 
 reset_counter:      
             mov.b   #0x00, &COUNTER         ; Reset counter
             ret            
+=======
+            jnz     i2c_send_next
+            ret
+
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
 ;------------------------------------------------------------------------------
 
 
@@ -275,6 +345,7 @@ reset_counter:
 ;           Receive a byte
 ;------------------------------------------------------------------------------
 i2c_rx_byte:
+<<<<<<< HEAD
             bic.b   #BIT5, &P1DIR           ; SDA input
             mov.b   #8, R6                  ; Move 8 into reg for loop
             clr.w   R7                      ; Make sure empty to recive new data
@@ -286,6 +357,17 @@ i2c_rx_loop:
             call    #i2c_delay              ; Delay
             bit.b   #BIT5, &P1IN            ; Check
             jz      rx_low                  ; Jump if SDA low
+=======
+            bis.b   #BIT5, &P1DIR           ; SDA input
+            mov.b   #8, R6                  ; Move 8 into reg for loop
+            clr.b   R7                      ; Make sure empty to recive new data
+
+i2c_rx_loop:
+            bis.b   #BIT6, &P1OUT           ; SCL high
+            call    #i2c_delay              ; Delay
+            bit.b   #BIT5, &P1OUT           ; Check
+            jnz      rx_low                 ; Jump if SDA low
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
             bis.b   #BIT0, R7               ; SDA high so set the bit
 
 rx_low: 
@@ -295,9 +377,20 @@ rx_low:
             dec     R6                      ; Dec R6
             jnz     i2c_rx_loop             ; Loop?
 
+<<<<<<< HEAD
             bis.b   #BIT5, &P1DIR           ; SDA output
             mov.b   R7, &rx_byte            ; Store in memory
             ret
+=======
+            bic.b   #BIT5, &P1OUT           ; SDA low for ack
+            bis.b   #BIT5, &P1DIR           ; SDA output
+            bis.b   #BIT6, &P1OUT           ; SCL high
+            call    #i2c_delay              ; Delay
+            bic.b   #BIT6, &P1OUT           ; SCL low
+            call    #i2c_delay
+
+            mov.b   R7, &rx_byte
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
 ;------------------------------------------------------------------------------
 
 
@@ -310,7 +403,11 @@ i2c_recieve_ack_nack:
             call    #i2c_delay              ; Delay
            
             bis.b   #BIT6, &P1OUT           ; SCL high
+<<<<<<< HEAD
             call    #i2c_delay              ; Delay
+=======
+            ;call    #i2c_delay              ; Delay
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
             
             bit.b   #BIT5, &P1IN            ; Test ack nack
             jnz     i2c_nack_recieved       ; If SDA high nack recieved
@@ -318,7 +415,10 @@ i2c_recieve_ack_nack:
             bic.b   #BIT6, P1OUT            ; SCL low
             bis.b   #BIT5, &P1DIR           ; SDA output  
             clr.b   R8                      ; Clear R8
+<<<<<<< HEAD
             call    #i2c_delay
+=======
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
 
             ret
 
@@ -327,6 +427,7 @@ i2c_nack_recieved:
             call    #i2c_delay              ; Delay
             bic.b   #BIT6, &P1OUT           ; SCL low
             mov.b   #0x01, R8               ; Put 1 in R8 to signify NACK
+<<<<<<< HEAD
             call    #i2c_delay              ; Delay
             ret
 
@@ -356,6 +457,21 @@ i2c_send_ack:
             bic.b   #BIT6, &P1OUT           ; SCL low
             call    #i2c_delay              ; Delay
             ret
+=======
+            ret
+
+i2c_nack: 
+            call   #i2c_stop
+            ret
+
+;i2c_send_ack:
+;            bic.b   #BIT5, &P1OUT           ; Clear SDA
+;            call    #i2c_delay              ; Delay
+;            bis.b   #BIT6, &P1OUT           ; Pulse SCL
+;            call    #i2c_delay              ; Delay
+;            bic.b   #BIT6, &P1OUT           ; SCL low
+;            ret
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
 
 ;------------------------------------------------------------------------------
 
@@ -368,6 +484,7 @@ endless:
 ;------------------------------------------------------------------------------
 
             .DATA
+<<<<<<< HEAD
 tx_byte:    .byte   00000000b               ; Hold the byte to transmit before being sent
 rx_byte:    .byte   0x00                    ; Data recieved from AD2, used in recieve from AD2 task
 DATA_LIST:  .byte   0x01, 0x02, 0x03, 0x04  ; Data to send for the send multiple task
@@ -375,12 +492,24 @@ DATA_COUNT: .byte   0x04                    ; Amount of items in DATA_LIST, for 
 ADDRESS_WR: .byte   00001110b               ; Address to write to
 ADDRESS_RD: .byte   00001111b               ; Address to read to
 COUNTER:    .byte   0x00                    ; For the send dummy data task
+=======
+tx_byte:    .byte   10101010b                    ; Hold the byte to transmit before being sent
+rx_byte:    .byte   0x00                    ; Data recieved from AD2, used in recieve from AD2 task
+DATA_LIST:  .byte   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09  ; Data to send for the send multiple task
+DATA_COUNT: .byte   0x0A                    ; Amount of items in DATA_LIST, for the send multiple task
+ADDRESS:    .byte   10101010b               ; Where send the byte to
+
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
 
 ;------------------------------------------------------------------------------
 ;           Interrupt Service Routines
 ;------------------------------------------------------------------------------        
 ISR_TB0_CCR0:
+<<<<<<< HEAD
             xor.b   #BIT0, &P1OUT           ; Toggle P1.1 led
+=======
+            xor.b   #BIT0, &P1OUT           ; Toggle P1.1
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
             bic.w   #CCIFG, &TB0CCTL0       ; Clear flag
             reti
 
@@ -394,4 +523,8 @@ ISR_TB0_CCR0:
             .sect ".int43"
             .short ISR_TB0_CCR0
 
+<<<<<<< HEAD
             .end  
+=======
+            .end
+>>>>>>> aa840508d082c9d1ef7c3645f1c38fe3c0deeefc
