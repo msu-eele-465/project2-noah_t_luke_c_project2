@@ -56,29 +56,29 @@ main:
 ;            nop
 
 ;---------- RTC Main Loop -------------------
-;            call    #i2c_read_rtc
-;            call    #i2c_delay
-;            jmp main
-;            nop
-
-;---------- AD2 Read Main Loop --------------
-            mov.b   ADDRESS_RD, &tx_byte    ; Address to read to 
-            call    #i2c_start              ; Start
-            call    #i2c_tx_byte            ; Send address
-
-            call    #i2c_recieve_ack_nack
-            tst.b   R8
-            jnz     i2c_nack
-
-            call    #i2c_rx_byte
-            call    #i2c_send_ack
-            call    #i2c_rx_byte
-            call    #i2c_send_ack
-            call    #i2c_rx_byte
-            call    #i2c_send_nack
-            call    #i2c_stop
+            call    #i2c_read_rtc
+            call    #i2c_delay
             jmp main
             nop
+
+;---------- AD2 Read Main Loop --------------
+;            mov.b   ADDRESS_RD, &tx_byte    ; Address to read to 
+;            call    #i2c_start              ; Start
+;            call    #i2c_tx_byte            ; Send address
+
+;            call    #i2c_recieve_ack_nack
+;            tst.b   R8
+;            jnz     i2c_nack;
+;
+;            call    #i2c_rx_byte
+;            call    #i2c_send_ack
+;            call    #i2c_rx_byte
+;            call    #i2c_send_ack
+;            call    #i2c_rx_byte
+;            call    #i2c_send_nack
+;            call    #i2c_stop
+;            jmp main
+;            nop
 
 
 ;------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ i2c_stop:                                   ; Stop signal, low to high on SDA, h
             ret
 
 i2c_delay:
-            mov.w   #0x0F,R4
+            mov.w   #0x0FFF,R4
 delay_loop: 
             dec     R4
             jnz     delay_loop     
