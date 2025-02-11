@@ -50,16 +50,16 @@ DisableLPM  bic.w   #LOCKLPM5,&PM5CTL0      ; Disable low-power mode
 
 main:
 ;---------- Arbitrary Write Main Loop ------- 
-;            call    #i2c_write
-;            call    #i2c_delay
-;            jmp     main
-;            nop
+            call    #i2c_write
+            call    #i2c_delay
+            jmp     main
+            nop
 
 ;---------- RTC Main Loop -------------------
-            call    #i2c_read_rtc
-            call    #i2c_delay
-            jmp main
-            nop
+;            call    #i2c_read_rtc
+;            call    #i2c_delay
+;            jmp main
+;            nop
 
 ;---------- AD2 Read Main Loop --------------
 ;            mov.b   ADDRESS_RD, &tx_byte    ; Address to read to 
@@ -143,7 +143,7 @@ i2c_write:
             ret
 
 i2c_read:
-            mov.b   ADDRESS_RD, &tx_byte    ; Address to read to 
+            mov.b   #11010001b, &tx_byte    ; Address to read to 
             call    #i2c_start              ; Start
             call    #i2c_tx_byte            ; Send address
 
@@ -394,8 +394,8 @@ endless:
             .DATA
 tx_byte:    .byte   00000000b               ; Hold the byte to transmit before being sent
 rx_byte:    .byte   0x00                    ; Data recieved from AD2, used in recieve from AD2 task
-DATA_LIST:  .byte   0x00, 0x00, 0x00        ; Data to send for the send multiple task
-DATA_COUNT: .byte   0x03                    ; Amount of items in DATA_LIST, for the send multiple task
+DATA_LIST:  .byte   0x44                    ; Data to send for the send multiple task
+DATA_COUNT: .byte   0x01                    ; Amount of items in DATA_LIST, for the send multiple task
 ADDRESS_WR: .byte   11111110b               ; Address to write to
 ADDRESS_RD: .byte   00001111b               ; Address to read to
 
