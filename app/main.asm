@@ -49,10 +49,37 @@ DisableLPM  bic.w   #LOCKLPM5,&PM5CTL0      ; Disable low-power mode
            
 
 main:
+;---------- Arbitrary Write Main Loop ------- 
+;            call    #i2c_write
+;            call    #i2c_delay
+;            jmp     main
+;            nop
+
+;---------- RTC Main Loop -------------------
             call    #i2c_read_rtc
             call    #i2c_delay
             jmp main
             nop
+
+;---------- AD2 Read Main Loop --------------
+;            mov.b   ADDRESS_RD, &tx_byte    ; Address to read to 
+;            call    #i2c_start              ; Start
+;            call    #i2c_tx_byte            ; Send address
+
+;            call    #i2c_recieve_ack_nack
+;            tst.b   R8
+;            jnz     i2c_nack;
+;
+;            call    #i2c_rx_byte
+;            call    #i2c_send_ack
+;            call    #i2c_rx_byte
+;            call    #i2c_send_ack
+;            call    #i2c_rx_byte
+;            call    #i2c_send_nack
+;            call    #i2c_stop
+;            jmp main
+;            nop
+
 
 ;------------------------------------------------------------------------------
 ;           Used Registors
@@ -110,16 +137,13 @@ i2c_write:
             tst.b   R8                      ; Test ack or nack
             jnz i2c_nack                    ; Jump if nack
 
-            mov.b   #0xAD, &tx_byte         ; What to send
-            call    #i2c_tx_byte            ; Send byte
-            call    #i2c_recieve_ack_nack   ; Recieve ack nack
-            tst.b   R8                      ; Test ack or nack
-            jnz i2c_nack                    ; Jump if nack
+            call    #i2c_send_multiple
+            call    #i2c_stop
 
             ret
 
 i2c_read:
-            mov.b   #11010001b, &tx_byte    ; Address to read to 
+            mov.b   ADDRESS_RD, &tx_byte    ; Address to read to 
             call    #i2c_start              ; Start
             call    #i2c_tx_byte            ; Send address
 
@@ -206,7 +230,7 @@ i2c_read_rtc:
 
             call    #i2c_delay              ; Delay
 
-            mov.b   #0x11, &tx_byte         ; Seconds registor address
+            mov.b   #0x11, &tx_byte         ; Temp registor address
             call    #i2c_tx_byte            ; Send address
 
             call    #i2c_recieve_ack_nack   ; Recieve ack / nack
@@ -253,18 +277,20 @@ set_scl:
 i2c_send_multiple:
             mov.b   DATA_COUNT,R10          ; Move the size of data packet into R10
             mov.w   #DATA_LIST,R9           ; Move the data packet into R9
-            ret
+            
             
 i2c_send_next:
             mov.b   @R9+, &tx_byte          ; First byte from R10 into tx_byte
             call    #i2c_tx_byte            ; Send byte
+
+            call    #i2c_recieve_ack_nack   ; Recieve ack / nack
+            tst.b   R8                      ; Test ack / nack
+            jnz     i2c_nack                ; Jump if nack
+            clrz
             dec     R10                     ; Decrease R10, number left to send
             jnz     i2c_send_next           ; Send next bit
             ret
-
-reset_counter:      
-            mov.b   #0x00, &COUNTER         ; Reset counter
-            ret            
+   
 ;------------------------------------------------------------------------------
 
 
@@ -295,6 +321,7 @@ rx_low:
             bis.b   #BIT5, &P1DIR           ; SDA output
             mov.b   R7, &rx_byte            ; Store in memory
             ret
+
 ;------------------------------------------------------------------------------
 
 
@@ -367,11 +394,10 @@ endless:
             .DATA
 tx_byte:    .byte   00000000b               ; Hold the byte to transmit before being sent
 rx_byte:    .byte   0x00                    ; Data recieved from AD2, used in recieve from AD2 task
-DATA_LIST:  .byte   0x01, 0x02, 0x03, 0x04  ; Data to send for the send multiple task
-DATA_COUNT: .byte   0x04                    ; Amount of items in DATA_LIST, for the send multiple task
-ADDRESS_WR: .byte   00001110b               ; Address to write to
+DATA_LIST:  .byte   0x00, 0x00, 0x00        ; Data to send for the send multiple task
+DATA_COUNT: .byte   0x03                    ; Amount of items in DATA_LIST, for the send multiple task
+ADDRESS_WR: .byte   11111110b               ; Address to write to
 ADDRESS_RD: .byte   00001111b               ; Address to read to
-COUNTER:    .byte   0x00                    ; For the send dummy data task
 
 ;------------------------------------------------------------------------------
 ;           Interrupt Service Routines
